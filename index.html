@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quản Lý Điểm Thi Đua Lớp Học - Bản Nâng Cấp</title>
+  <title>Quản Lý Điểm Thi Đua Lớp Học</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
@@ -149,7 +149,7 @@
           </form>
         </div>
 
-        <!-- Admin Controls: Đổi Mật Khẩu & Chốt Tháng -->
+        <!-- Admin Controls -->
         <div v-if="isAdmin" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
           <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
             <span>⚙️</span> Cấu Hình & Quản Lý Tháng
@@ -160,7 +160,7 @@
           </button>
 
           <div class="pt-2 border-t border-slate-100">
-            <p class="text-xs text-amber-700 mb-2">Chốt kết quả tháng này vào kho lưu trữ và reset toàn bộ điểm về 100.</p>
+            <p class="text-xs text-amber-700 mb-2">Chốt kết quả & lịch sử tháng này vào kho lưu trữ, sau đó reset điểm về 100.</p>
             <button @click="resetMonth" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl transition shadow-sm">
               🔄 Chốt & Reset Điểm Cuối Tháng
             </button>
@@ -169,21 +169,20 @@
 
         <!-- Thông báo người dùng -->
         <div v-if="currentRole === 'member'" class="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-xs text-blue-700 leading-relaxed">
-          💡 Bạn đang ở chế độ <b>Học sinh (Chỉ xem)</b>. Vui lòng chuyển Chế độ ở góc trên cùng nếu bạn là Tổ trưởng hoặc Giáo viên.
+          💡 Bạn đang ở chế độ <b>Học sinh (Chỉ xem)</b>.
         </div>
       </div>
 
-      <!-- Right Column: Leaderboard & History Logs -->
+      <!-- Right Column: Leaderboard, History Logs & Archives -->
       <div class="lg:col-span-2 space-y-6">
 
-        <!-- Leaderboard -->
+        <!-- Current Leaderboard -->
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-              <span>🥇</span> Bảng Xếp Hạng
+              <span>🥇</span> Bảng Xếp Hạng Tháng Hiện Tại
             </h2>
             
-            <!-- Filters -->
             <div class="flex items-center gap-2">
               <input v-model="searchQuery" type="text" placeholder="Tìm tên..." class="text-xs p-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none w-32 sm:w-40">
               <select v-model="selectedGroupFilter" class="text-xs p-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -230,13 +229,13 @@
           </div>
         </div>
 
-        <!-- History Log -->
+        <!-- Current History Log -->
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-              <span>📜</span> Lịch Sử Cộng / Trừ Điểm
+              <span>📜</span> Nhật Ký Cộng / Trừ Điểm Tháng Hiện Tại
             </h2>
-            <span class="text-xs text-slate-400">Hiển thị {{ sortedLogs.length }} lượt gần nhất</span>
+            <span class="text-xs text-slate-400">Hiển thị {{ sortedLogs.length }} lượt</span>
           </div>
           
           <div v-if="sortedLogs.length === 0" class="text-center py-8 text-xs text-slate-400">
@@ -258,7 +257,6 @@
                 <div class="font-bold text-sm px-2.5 py-1 rounded-lg" :class="log.points > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
                   {{ log.points > 0 ? '+' : '' }}{{ log.points }} đ
                 </div>
-                <!-- Nút Undo/Xóa log nếu lỡ ghi sai -->
                 <button v-if="isAdmin || isLeader" @click="undoLog(log.id)" title="Xóa & Hoàn điểm" class="text-xs text-slate-400 hover:text-rose-600 p-1">
                   ✕
                 </button>
@@ -267,36 +265,80 @@
           </div>
         </div>
 
-        <!-- Kho Lưu Trữ Lịch Sử Các Tháng Cũ -->
-        <div v-if="archives.length > 0" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-          <h2 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <span>📦</span> Kho Lưu Trữ Kết Quả Tháng Cũ
+        <!-- Kho Lưu Trữ Cả Bảng Điểm & Lịch Sử Tháng Cũ -->
+        <div v-if="archives.length > 0" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <span>📦</span> Kho Lưu Trữ Lịch Sử Các Tháng Cũ
           </h2>
-          <div class="space-y-2">
-            <details v-for="arc in archives" :key="arc.id" class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <summary class="font-semibold text-xs text-slate-700 cursor-pointer flex justify-between">
-                <span>📅 Kết Quả {{ arc.title }}</span>
-                <span class="text-indigo-600">Xem bảng xếp hạng ▾</span>
+
+          <div class="space-y-3">
+            <details v-for="arc in archives" :key="arc.id" class="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden group">
+              <summary class="p-4 font-bold text-sm text-slate-800 cursor-pointer flex justify-between items-center select-none hover:bg-slate-100 transition">
+                <div class="flex items-center gap-2">
+                  <span>📅 {{ arc.title }}</span>
+                  <span class="text-xs font-normal bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md">
+                    {{ arc.students ? arc.students.length : 0 }} học sinh • {{ arc.logs ? arc.logs.length : 0 }} lượt ghi điểm
+                  </span>
+                </div>
+                <span class="text-xs text-indigo-600 font-semibold group-open:rotate-180 transition-transform">▼ Xem lịch sử</span>
               </summary>
-              <div class="mt-3 pt-3 border-t border-slate-200">
-                <table class="w-full text-left text-xs">
-                  <thead>
-                    <tr class="text-slate-400 border-b border-slate-200">
-                      <th class="pb-1">Hạng</th>
-                      <th class="pb-1">Họ Tên</th>
-                      <th class="pb-1">Tổ</th>
-                      <th class="pb-1 text-right">Điểm Chốt</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(s, idx) in arc.students" :key="s.id" class="border-b border-slate-100">
-                      <td class="py-1.5 font-bold">#{{ idx + 1 }}</td>
-                      <td class="py-1.5">{{ s.name }}</td>
-                      <td class="py-1.5">Tổ {{ s.group }}</td>
-                      <td class="py-1.5 text-right font-bold">{{ s.points }} đ</td>
-                    </tr>
-                  </tbody>
-                </table>
+
+              <div class="p-4 pt-2 border-t border-slate-200 space-y-6">
+                <!-- Bảng Xếp Hạng Cuối Tháng -->
+                <div>
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <span>🥇</span> Bảng Xếp Hạng Cuối {{ arc.title }}
+                  </h4>
+                  <div class="overflow-x-auto bg-white rounded-xl border border-slate-200 p-2">
+                    <table class="w-full text-left text-xs">
+                      <thead>
+                        <tr class="text-slate-400 border-b border-slate-100">
+                          <th class="p-2">Hạng</th>
+                          <th class="p-2">Họ Tên</th>
+                          <th class="p-2">Tổ</th>
+                          <th class="p-2 text-right">Điểm Chốt</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        <tr v-for="(s, idx) in arc.students" :key="s.id">
+                          <td class="p-2 font-bold">#{{ idx + 1 }}</td>
+                          <td class="p-2 font-medium">{{ s.name }}</td>
+                          <td class="p-2 text-slate-500">Tổ {{ s.group }}</td>
+                          <td class="p-2 text-right font-bold" :class="s.points >= 100 ? 'text-emerald-600' : 'text-rose-600'">
+                            {{ s.points }} đ
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Lịch Sử Ghi Điểm Chi Tiết Tháng Đó -->
+                <div>
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <span>📜</span> Nhật Ký Cộng / Trừ Điểm Chi Tiết
+                  </h4>
+                  
+                  <div v-if="!arc.logs || arc.logs.length === 0" class="text-xs text-slate-400 italic py-2">
+                    Không có nhật ký ghi điểm chi tiết nào được lưu trữ cho tháng này.
+                  </div>
+
+                  <div v-else class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    <div v-for="log in arc.logs" :key="log.id" class="p-2.5 bg-white rounded-xl border border-slate-200 text-xs flex justify-between items-center">
+                      <div class="space-y-0.5">
+                        <div class="font-semibold text-slate-800">
+                          {{ log.studentName }} <span class="text-slate-400 font-normal">(Tổ {{ log.group }})</span>
+                        </div>
+                        <div class="text-slate-600">Lý do: {{ log.reason }}</div>
+                        <div class="text-[10px] text-slate-400">Ghi bởi: {{ log.createdBy }} • {{ log.timestamp }}</div>
+                      </div>
+                      <div class="font-bold px-2 py-0.5 rounded-md" :class="log.points > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'">
+                        {{ log.points > 0 ? '+' : '' }}{{ log.points }} đ
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </details>
           </div>
@@ -479,24 +521,28 @@
           if (index !== -1) {
             const log = this.logs[index];
             const student = this.students.find(s => s.id === log.studentId);
-            if (student) student.points -= log.points; // Hoàn lại điểm
+            if (student) student.points -= log.points;
             this.logs.splice(index, 1);
             this.saveState();
           }
         },
         resetMonth() {
-          if (confirm('Bạn có chắc chắn muốn chốt kết quả tháng này vào Kho lưu trữ và reset toàn bộ điểm về 100?')) {
+          if (confirm('Bạn có chắc chắn muốn chốt kết quả & nhật ký tháng này vào Kho lưu trữ và reset điểm về 100?')) {
             const monthTitle = prompt('Nhập tên tháng để lưu (Ví dụ: Tháng 9/2026):', `Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`);
             if (monthTitle) {
+              // Lưu song song cả xếp hạng và nhật ký ghi điểm chi tiết
               this.archives.unshift({
                 id: Date.now(),
                 title: monthTitle,
-                students: JSON.parse(JSON.stringify(this.rankedStudents))
+                students: JSON.parse(JSON.stringify(this.rankedStudents)),
+                logs: JSON.parse(JSON.stringify(this.sortedLogs))
               });
+              
+              // Reset điểm và xóa log tháng hiện tại
               this.students.forEach(s => s.points = 100);
               this.logs = [];
               this.saveState();
-              alert('Đã chốt tháng và lưu kết quả vào kho lưu trữ thành công!');
+              alert('Đã chốt tháng và lưu toàn bộ xếp hạng + nhật ký điểm vào kho thành công!');
             }
           }
         },
